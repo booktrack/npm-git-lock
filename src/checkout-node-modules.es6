@@ -18,6 +18,7 @@ require('string.prototype.startswith');
 let readFilePromise = promisify(fs.readFile);
 let delPromise = promisify(del);
 let statPromise = promisify(fs.stat);
+let Q = require("q");
 
 /**
  * List of platforms that we know only work on a certain platform.
@@ -350,7 +351,11 @@ module.exports = (cwd, {repo, verbose, crossPlatform, incrementalInstall, produc
             })
             .then(() => {
                 log.debug(`Pushing tag ${packageJsonSha1} to ${repo}`);
-                return git(`push ${repo} master --tags`);
+                return git(`push ${repo} master --tags`)
+                .catch((ex) => {
+                    let deferred = Q.defer();
+                    deferred.resolve('Tags already exist, fail gracefully');
+                });
             });
         });
     }
