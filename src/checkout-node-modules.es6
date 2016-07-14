@@ -133,8 +133,8 @@ module.exports = (cwd, {repo, verbose, crossPlatform, incrementalInstall, produc
         });
     }
 
-    function git(cmd, {silent}={}) {
-        return gitPromise(cmd).catch((error) => {
+    function git(cmd, {silent}={}, callback) {
+        return gitPromise(cmd, callback).catch((error) => {
             if (!silent) {
                 // report any Git errors immediately
                 log.info(`Git command '${cmd}' failed:\n${error.stdout}`);
@@ -351,10 +351,14 @@ module.exports = (cwd, {repo, verbose, crossPlatform, incrementalInstall, produc
             })
             .then(() => {
                 log.debug(`Pushing tag ${packageJsonSha1} to ${repo}`);
-                return git(`push ${repo} master --tags`)
-                .catch((ex) => {
+                return git(`push ${repo} master --tags`, { silent: false}, (stdout, code) => {
                     let deferred = Q.defer();
-                    deferred.resolve('Tags already exist, fail gracefully');
+
+                    if (code > 0) {
+                        deferred.resolve('Tag already exists');
+                    }
+
+                    return deferred.promise;
                 });
             });
         });
